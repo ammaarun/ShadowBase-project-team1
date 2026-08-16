@@ -1,5 +1,7 @@
 package com.shadowbase.controller;
 
+import com.shadowbase.dto.ExecuteSqlRequest;
+import com.shadowbase.dto.ExecuteSqlResponse;
 import com.shadowbase.service.DatabaseContainerService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -8,7 +10,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/environments")
-@CrossOrigin(origins = "*") // Allows our future React frontend to call this API without CORS errors
+@CrossOrigin(origins = "*") // Allows our React frontend to call these APIs without CORS errors
 public class DatabaseEnvironmentController {
 
     private final DatabaseContainerService containerService;
@@ -20,7 +22,7 @@ public class DatabaseEnvironmentController {
 
     /**
      * Endpoint to spin up a new shadow database.
-     * POST http://localhost:8080/api/environments/start
+     * POST http://localhost:8081/api/environments/start
      */
     @PostMapping("/start")
     public ResponseEntity<Map<String, String>> startEnvironment() {
@@ -29,8 +31,30 @@ public class DatabaseEnvironmentController {
     }
 
     /**
+     * Endpoint to execute migration SQL scripts against an active shadow database container.
+     * POST http://localhost:8081/api/environments/{environmentId}/execute
+     */
+    @PostMapping("/{environmentId}/execute")
+    public ResponseEntity<ExecuteSqlResponse> executeSql(
+            @PathVariable String environmentId,
+            @RequestBody ExecuteSqlRequest request) {
+        ExecuteSqlResponse response = containerService.executeSql(environmentId, request.getSql());
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Endpoint to seed mock production schema and sample data into the container.
+     * POST http://localhost:8081/api/environments/{environmentId}/seed
+     */
+    @PostMapping("/{environmentId}/seed")
+    public ResponseEntity<ExecuteSqlResponse> seedEnvironment(@PathVariable String environmentId) {
+        ExecuteSqlResponse response = containerService.seedShadowDatabase(environmentId);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * Endpoint to destroy an existing shadow database.
-     * DELETE http://localhost:8080/api/environments/{environmentId}
+     * DELETE http://localhost:8081/api/environments/{environmentId}
      */
     @DeleteMapping("/{environmentId}")
     public ResponseEntity<String> stopEnvironment(@PathVariable String environmentId) {
