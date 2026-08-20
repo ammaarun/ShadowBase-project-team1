@@ -15,6 +15,11 @@ public class ProductionDatabaseService {
 
     private PostgreSQLContainer<?> productionContainer;
     private final AtomicLong cdcEventCounter = new AtomicLong(0);
+    private final CdcStreamReplayerService replayerService;
+
+    public ProductionDatabaseService(CdcStreamReplayerService replayerService) {
+        this.replayerService = replayerService;
+    }
 
     /**
      * Starts the Mock Production Database with PostgreSQL Write-Ahead Logging (wal_level=logical) enabled.
@@ -71,9 +76,12 @@ public class ProductionDatabaseService {
             // Increment CDC event counter
             cdcEventCounter.incrementAndGet();
 
+            // Automatically shadow transaction to active Shadow containers!
+            replayerService.shadowTransaction(sql);
+
             return new ExecuteSqlResponse(
                     true,
-                    "Transaction applied to Production DB (CDC WAL event captured).",
+                    "Transaction applied to Production DB & shadowed to active sandbox containers.",
                     null,
                     updateCount >= 0 ? updateCount : 1,
                     null,
