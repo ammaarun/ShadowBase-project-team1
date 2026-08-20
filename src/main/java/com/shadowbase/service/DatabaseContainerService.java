@@ -42,6 +42,10 @@ public class DatabaseContainerService {
         );
     }
 
+    public Map<String, PostgreSQLContainer<?>> getActiveContainers() {
+        return Collections.unmodifiableMap(activeContainers);
+    }
+
     /**
      * Executes DDL/DML and SELECT queries against the specific running shadow container.
      */
