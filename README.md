@@ -46,3 +46,12 @@ Phase 2: Kafka + Debezium CDC
 Phase 3: SQL replay engine
 
 Phase 4: Migration testing workflows
+
+shadowbase/
+├── backend/
+│   ├── src/
+│   └── pom.xml
+├── frontend/
+│   ├── src/
+│   └── package.json
+└── README.md
