@@ -4,13 +4,6 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
-### Node / React Frontend ###
-node_modules/
-**/node_modules/
-dist/
-build/
-.DS_Store
-
 ### STS ###
 .apt_generated
 .classpath
