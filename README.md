@@ -3,10 +3,10 @@ Zero-Downtime Schema Migration Sandbox
 Added Spring Boot skeleton with Web, JPA, Lombok, Validation, MySQL dependencies.
 
 ShadowBase: Zero-Downtime Schema Migration Sandbox
-📌 Overview
+Overview
 ShadowBase is a sandbox for safe schema migrations. It spins up temporary PostgreSQL clones, shadows live SQL traffic with Debezium/Kafka, and lets you test schema changes before production.
 
-⚙️ Tech Stack
+Tech Stack
 Backend: Java 21, Spring Boot 3
 
 Database: PostgreSQL via Testcontainers
@@ -17,14 +17,14 @@ Replay Engine: Java Stream API
 
 Frontend: React + Monaco Editor
 
-🚀 Phase 1 (Current)
+Phase 1 (Current)
 Spring Boot backend with REST APIs (DatabaseContainerService, DatabaseEnvironmentController)
 
 React frontend scaffold with Monaco SQL editor
 
 Start/stop shadow DB environments from UI
 
-🛠️ Setup
+Setup
 Backend
 bash
 ./mvnw spring-boot:run
@@ -33,14 +33,14 @@ bash
 cd frontend
 npm install
 npm run dev
-📖 References
+References
 Spring Boot Docs (spring.io in Bing)
 
 Testcontainers
 
 Debezium
 
-📅 Roadmap
+Roadmap
 Phase 2: Kafka + Debezium CDC
 
 Phase 3: SQL replay engine
