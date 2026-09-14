@@ -1,6 +1,7 @@
 package com.shadowbase.service;
 
 import com.shadowbase.dto.ExecuteSqlResponse;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.testcontainers.containers.PostgreSQLContainer;
 
@@ -17,6 +18,11 @@ public class DatabaseContainerService {
 
     // A map to keep track of all running shadow databases by a unique ID
     private final Map<String, PostgreSQLContainer<?>> activeContainers = new ConcurrentHashMap<>();
+    private final DashboardService dashboardService;
+
+    public DatabaseContainerService(@Lazy DashboardService dashboardService) {
+        this.dashboardService = dashboardService;
+    }
 
     /**
      * Spins up a new isolated PostgreSQL Docker container on the fly.
@@ -33,6 +39,10 @@ public class DatabaseContainerService {
 
         postgres.start();
         activeContainers.put(environmentId, postgres);
+
+        if (dashboardService != null) {
+            dashboardService.incrementCreatedContainers();
+        }
 
         return Map.of(
                 "environmentId", environmentId,
@@ -55,6 +65,7 @@ public class DatabaseContainerService {
             return new ExecuteSqlResponse(false, "Failed to execute SQL", "Environment not found: " + environmentId, 0, null, null);
         }
 
+        ExecuteSqlResponse response;
         try (Connection conn = DriverManager.getConnection(
                 postgres.getJdbcUrl(),
                 postgres.getUsername(),
@@ -82,7 +93,7 @@ public class DatabaseContainerService {
                         data.add(row);
                     }
 
-                    return new ExecuteSqlResponse(
+                    response = new ExecuteSqlResponse(
                             true,
                             "Query executed successfully. Returned " + data.size() + " row(s).",
                             null,
@@ -93,7 +104,7 @@ public class DatabaseContainerService {
                 }
             } else {
                 int updateCount = stmt.getUpdateCount();
-                return new ExecuteSqlResponse(
+                response = new ExecuteSqlResponse(
                         true,
                         "SQL statement executed successfully.",
                         null,
@@ -104,7 +115,7 @@ public class DatabaseContainerService {
             }
 
         } catch (Exception e) {
-            return new ExecuteSqlResponse(
+            response = new ExecuteSqlResponse(
                     false,
                     "SQL Execution Exception: " + e.getMessage(),
                     e.toString(),
@@ -113,6 +124,13 @@ public class DatabaseContainerService {
                     null
             );
         }
+
+        if (dashboardService != null && sql != null && !sql.trim().toUpperCase().startsWith("SELECT")) {
+            boolean isHighRisk = sql.toUpperCase().contains("DROP") || sql.toUpperCase().contains("ALTER");
+            dashboardService.recordMigrationExecution(response.isSuccess(), isHighRisk, sql.trim().replaceAll("\\s+", " "));
+        }
+
+        return response;
     }
 
     /**
@@ -140,7 +158,11 @@ public class DatabaseContainerService {
             ON CONFLICT DO NOTHING;
             """;
 
-        return executeSql(environmentId, seedSql);
+        ExecuteSqlResponse response = executeSql(environmentId, seedSql);
+        if (dashboardService != null) {
+            dashboardService.recordActivity("SEED_DATABASE", "SUCCESS", "Seeded mock users and orders schema into Shadow DB");
+        }
+        return response;
     }
 
     /**
@@ -150,6 +172,9 @@ public class DatabaseContainerService {
         PostgreSQLContainer<?> postgres = activeContainers.remove(environmentId);
         if (postgres != null) {
             postgres.stop();
+            if (dashboardService != null) {
+                dashboardService.recordActivity("CONTAINER_STOP", "SUCCESS", "Destroyed Shadow DB container " + environmentId.substring(0, 8));
+            }
             return true;
         }
         return false;
