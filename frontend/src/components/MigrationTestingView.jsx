@@ -1,5 +1,6 @@
 import React from 'react';
 import Editor from '@monaco-editor/react';
+import RiskScorePanel from './RiskScorePanel';
 
 function MigrationTestingView({
   environment,
@@ -67,6 +68,9 @@ function MigrationTestingView({
           </button>
         </div>
       </header>
+
+      {/* ENHANCED AST RISK SCORE PANEL */}
+      <RiskScorePanel astResult={astResult} />
 
       {/* PRE-FLIGHT AST RISK WARNING BANNER */}
       {astResult && astResult.warnings && astResult.warnings.length > 0 && (
