@@ -16,19 +16,16 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class DatabaseContainerService {
 
-    // A map to keep track of all running shadow databases by a unique ID
     private final Map<String, PostgreSQLContainer<?>> activeContainers = new ConcurrentHashMap<>();
     private final DashboardService dashboardService;
+    private final MigrationHistoryService historyService;
 
-    public DatabaseContainerService(@Lazy DashboardService dashboardService) {
+    public DatabaseContainerService(@Lazy DashboardService dashboardService,
+                                    @Lazy MigrationHistoryService historyService) {
         this.dashboardService = dashboardService;
+        this.historyService = historyService;
     }
 
-    /**
-     * Spins up a new isolated PostgreSQL Docker container on the fly.
-     * 
-     * @return A map containing connection details to the new database.
-     */
     public Map<String, String> startShadowDatabase() {
         String environmentId = UUID.randomUUID().toString();
 
@@ -56,16 +53,15 @@ public class DatabaseContainerService {
         return Collections.unmodifiableMap(activeContainers);
     }
 
-    /**
-     * Executes DDL/DML and SELECT queries against the specific running shadow container.
-     */
     public ExecuteSqlResponse executeSql(String environmentId, String sql) {
         PostgreSQLContainer<?> postgres = activeContainers.get(environmentId);
         if (postgres == null) {
             return new ExecuteSqlResponse(false, "Failed to execute SQL", "Environment not found: " + environmentId, 0, null, null);
         }
 
+        long startTime = System.currentTimeMillis();
         ExecuteSqlResponse response;
+
         try (Connection conn = DriverManager.getConnection(
                 postgres.getJdbcUrl(),
                 postgres.getUsername(),
@@ -125,17 +121,54 @@ public class DatabaseContainerService {
             );
         }
 
-        if (dashboardService != null && sql != null && !sql.trim().toUpperCase().startsWith("SELECT")) {
-            boolean isHighRisk = sql.toUpperCase().contains("DROP") || sql.toUpperCase().contains("ALTER");
-            dashboardService.recordMigrationExecution(response.isSuccess(), isHighRisk, sql.trim().replaceAll("\\s+", " "));
+        long duration = System.currentTimeMillis() - startTime;
+
+        if (sql != null && !sql.trim().isEmpty()) {
+            String upperSql = sql.toUpperCase();
+            String riskLevel = "LOW";
+            int riskScore = 10;
+            if (upperSql.contains("DROP TABLE") || upperSql.contains("TRUNCATE")) {
+                riskLevel = "CRITICAL";
+                riskScore = 95;
+            } else if (upperSql.contains("DROP COLUMN") || upperSql.contains("DROP")) {
+                riskLevel = "HIGH";
+                riskScore = 85;
+            } else if (upperSql.contains("MODIFY") || upperSql.contains("ALTER TYPE")) {
+                riskLevel = "MEDIUM";
+                riskScore = 45;
+            }
+
+            String affectedTable = "unknown";
+            String[] tokens = sql.trim().split("\\s+");
+            for (int i = 0; i < tokens.length - 1; i++) {
+                if ("TABLE".equalsIgnoreCase(tokens[i]) || "FROM".equalsIgnoreCase(tokens[i]) || "INTO".equalsIgnoreCase(tokens[i])) {
+                    affectedTable = tokens[i + 1].replaceAll("[^a-zA-Z0-9_]", "");
+                    break;
+                }
+            }
+
+            boolean isHighRisk = "HIGH".equals(riskLevel) || "CRITICAL".equals(riskLevel);
+            if (dashboardService != null && !upperSql.startsWith("SELECT")) {
+                dashboardService.recordMigrationExecution(response.isSuccess(), isHighRisk, sql.trim().replaceAll("\\s+", " "));
+            }
+
+            if (historyService != null) {
+                String status = response.isSuccess() ? "SUCCESS" : "FAILED";
+                historyService.saveRecord(
+                        sql,
+                        status,
+                        riskLevel,
+                        riskScore,
+                        affectedTable,
+                        duration,
+                        response.getErrorDetails()
+                );
+            }
         }
 
         return response;
     }
 
-    /**
-     * Seeds the shadow database container with a mock production schema and sample records.
-     */
     public ExecuteSqlResponse seedShadowDatabase(String environmentId) {
         String seedSql = """
             CREATE TABLE IF NOT EXISTS users (
@@ -165,9 +198,6 @@ public class DatabaseContainerService {
         return response;
     }
 
-    /**
-     * Stops and removes a running shadow database container.
-     */
     public boolean destroyShadowDatabase(String environmentId) {
         PostgreSQLContainer<?> postgres = activeContainers.remove(environmentId);
         if (postgres != null) {
