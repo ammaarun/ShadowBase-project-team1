@@ -4,6 +4,7 @@ import Navbar from './components/Navbar';
 import DashboardView from './components/DashboardView';
 import MigrationTestingView from './components/MigrationTestingView';
 import MigrationHistoryView from './components/MigrationHistoryView';
+import SchemaDiffView from './components/SchemaDiffView';
 import './index.css';
 
 const DEFAULT_MIGRATION_SQL = `-- ShadowBase Schema Migration Script
@@ -365,15 +366,7 @@ function App() {
           )}
 
           {activeTab === 'diff' && (
-            <div className="card-panel">
-              <div className="panel-header">
-                <h3>Schema Diff Viewer</h3>
-                <span className="text-muted">Feature 3 Implementation Target</span>
-              </div>
-              <p className="text-muted" style={{ padding: '20px 0' }}>
-                GitHub-style Visual Schema Diff Viewer will be activated in Feature 3!
-              </p>
-            </div>
+            <SchemaDiffView environment={environment} />
           )}
 
           {activeTab === 'workspace' && (

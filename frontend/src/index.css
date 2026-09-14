@@ -745,3 +745,93 @@ body {
   justify-content: flex-end;
 }
 
+/* SCHEMA DIFF VIEWER STYLES */
+.diff-summary-pill {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.diff-num { font-size: 1.3rem; font-weight: 800; font-family: monospace; }
+.diff-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; }
+
+.diff-viewer-codeblock {
+  background: #020617;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.85rem;
+}
+
+.diff-line-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 6px;
+  gap: 12px;
+}
+
+.diff-line-item.add {
+  background: rgba(16, 185, 129, 0.12);
+  border-left: 4px solid var(--success);
+}
+
+.diff-line-item.remove {
+  background: rgba(244, 63, 94, 0.12);
+  border-left: 4px solid var(--danger);
+}
+
+.diff-line-item.modify {
+  background: rgba(245, 158, 11, 0.12);
+  border-left: 4px solid var(--warning);
+}
+
+.diff-line-prefix {
+  font-size: 1.1rem;
+  font-weight: 800;
+  width: 16px;
+}
+
+.diff-line-item.add .diff-line-prefix { color: var(--success); }
+.diff-line-item.remove .diff-line-prefix { color: var(--danger); }
+.diff-line-item.modify .diff-line-prefix { color: var(--warning); }
+
+.diff-line-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.diff-target-table {
+  color: var(--accent-cyan);
+  font-weight: 700;
+}
+
+.diff-text-add { color: #a7f3d0; font-weight: 600; }
+.diff-text-remove { color: #fecdd3; text-decoration: line-through; }
+.diff-arrow { color: var(--text-muted); }
+
+.alert {
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  margin-top: 10px;
+}
+
+.alert-success {
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: var(--success);
+}
+
+
