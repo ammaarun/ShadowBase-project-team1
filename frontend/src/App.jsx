@@ -1,5 +1,8 @@
-import { useState, useEffect } from 'react';
-import Editor from '@monaco-editor/react';
+import React, { useState, useEffect } from 'react';
+import Sidebar from './components/Sidebar';
+import Navbar from './components/Navbar';
+import DashboardView from './components/DashboardView';
+import MigrationTestingView from './components/MigrationTestingView';
 import './index.css';
 
 const DEFAULT_MIGRATION_SQL = `-- ShadowBase Schema Migration Script
@@ -9,24 +12,39 @@ ALTER TABLE users ADD COLUMN bio VARCHAR(255);
 `;
 
 function App() {
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [environment, setEnvironment] = useState(null);
   const [productionDb, setProductionDb] = useState(null);
   const [loading, setLoading] = useState(false);
   const [sql, setSql] = useState(DEFAULT_MIGRATION_SQL);
   const [astResult, setAstResult] = useState(null);
-  const [logs, setLogs] = useState([
-    { type: 'info', text: 'ShadowBase Sandbox ready. Start an environment to begin.' }
-  ]);
+  const [dashboardStats, setDashboardStats] = useState(null);
 
-  // Tabular result state
+  const [logs, setLogs] = useState([
+    { type: 'info', text: 'ShadowBase Platform ready. Select a tab to navigate.' }
+  ]);
   const [queryResult, setQueryResult] = useState(null);
 
   const addLog = (type, text) => {
     setLogs((prev) => [...prev, { type, text: `[${new Date().toLocaleTimeString()}] ${text}` }]);
   };
 
-  // Poll Production DB Status & CDC metrics
+  // Fetch Dashboard Stats from Backend
+  const fetchDashboardStats = async () => {
+    try {
+      const res = await fetch('http://localhost:8081/api/dashboard/stats');
+      if (res.ok) {
+        const data = await res.json();
+        setDashboardStats(data);
+      }
+    } catch (e) {
+      console.error("Error fetching dashboard stats:", e);
+    }
+  };
+
+  // Poll Production DB Status & Dashboard Stats
   useEffect(() => {
+    fetchDashboardStats();
     const interval = setInterval(async () => {
       try {
         const res = await fetch('http://localhost:8081/api/production/status');
@@ -38,6 +56,7 @@ function App() {
             setProductionDb(null);
           }
         }
+        fetchDashboardStats();
       } catch (e) {
         // Backend offline or compiling
       }
@@ -82,6 +101,7 @@ function App() {
       const data = await response.json();
       setEnvironment(data);
       addLog('success', `Shadow DB container started successfully (ID: ${data.environmentId.substring(0, 8)}...)`);
+      fetchDashboardStats();
     } catch (error) {
       console.error("Failed to start environment:", error);
       addLog('error', 'Failed to connect to backend API. Ensure Spring Boot is running on port 8081.');
@@ -100,6 +120,7 @@ function App() {
       const data = await response.json();
       setProductionDb(data);
       addLog('success', 'Production DB online with PostgreSQL WAL Logical Replication enabled!');
+      fetchDashboardStats();
     } catch (error) {
       addLog('error', `Failed to start Production DB: ${error.message}`);
     } finally {
@@ -113,11 +134,11 @@ function App() {
     addLog('info', 'Simulating live production transaction (INSERT INTO users)...');
     try {
       const randomId = Math.floor(Math.random() * 10000);
-      const sql = `INSERT INTO users (name, email) VALUES ('User_${randomId}', 'user_${randomId}@prod.com');`;
+      const sqlQuery = `INSERT INTO users (name, email) VALUES ('User_${randomId}', 'user_${randomId}@prod.com');`;
       const response = await fetch('http://localhost:8081/api/production/transaction', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sql })
+        body: JSON.stringify({ sql: sqlQuery })
       });
       const data = await response.json();
       if (data.success) {
@@ -125,6 +146,7 @@ function App() {
         const statusRes = await fetch('http://localhost:8081/api/production/status');
         const statusData = await statusRes.json();
         setProductionDb(statusData);
+        fetchDashboardStats();
       } else {
         addLog('error', `Production Transaction Error: ${data.message}`);
       }
@@ -146,6 +168,7 @@ function App() {
       const data = await response.json();
       if (data.success) {
         addLog('success', 'Database seeded successfully with sample tables (users, orders)!');
+        fetchDashboardStats();
       } else {
         addLog('error', `Seeding Error: ${data.message} - ${data.errorDetails}`);
       }
@@ -175,6 +198,7 @@ function App() {
         } else {
           setQueryResult(null);
         }
+        fetchDashboardStats();
       } else {
         addLog('error', `Execution Failed! ${data.message}`);
         if (data.errorDetails) {
@@ -207,6 +231,7 @@ function App() {
       addLog('info', `Environment ${environment.environmentId.substring(0, 8)}... destroyed.`);
       setEnvironment(null);
       setQueryResult(null);
+      fetchDashboardStats();
     } catch (error) {
       addLog('error', `Error stopping environment: ${error.message}`);
     } finally {
@@ -221,6 +246,7 @@ function App() {
       await fetch('http://localhost:8081/api/production', { method: 'DELETE' });
       addLog('info', 'Production DB stopped.');
       setProductionDb(null);
+      fetchDashboardStats();
     } catch (e) {
       addLog('error', `Error stopping Production DB: ${e.message}`);
     } finally {
@@ -229,236 +255,193 @@ function App() {
   };
 
   return (
-    <div className="dashboard-container">
-      {/* SIDEBAR */}
-      <aside className="sidebar">
-        <h1 className="logo">
-          <span>🌒</span> ShadowBase
-        </h1>
-        
-        <div className="control-panel">
-          {!environment ? (
-            <button 
-              className="btn btn-primary" 
-              onClick={startEnvironment}
-              disabled={loading}
-            >
-              {loading ? "Starting..." : "🚀 Start Shadow DB"}
-            </button>
-          ) : (
-            <button 
-              className="btn btn-danger" 
-              onClick={stopEnvironment}
-              disabled={loading}
-            >
-              {loading ? "Stopping..." : "🛑 Destroy Shadow DB"}
-            </button>
+    <div className="app-container">
+      {/* UNIFIED SIDEBAR */}
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        activeContainersCount={environment ? 1 : 0}
+        cdcOnline={!!productionDb}
+      />
+
+      {/* MAIN VIEW AREA */}
+      <div className="app-main">
+        <Navbar
+          activeTab={activeTab}
+          stats={dashboardStats}
+          onRefresh={fetchDashboardStats}
+        />
+
+        <div className="view-container">
+          {activeTab === 'dashboard' && (
+            <DashboardView
+              stats={dashboardStats}
+              onNavigate={(tab) => setActiveTab(tab)}
+            />
           )}
 
-          {!productionDb ? (
-            <button 
-              className="btn btn-secondary" 
-              onClick={startProductionDb}
-              disabled={loading}
-            >
-              📡 Start Production DB (CDC)
-            </button>
-          ) : (
-            <>
-              <button 
-                className="btn btn-warning" 
-                onClick={simulateProductionTraffic}
-                disabled={loading}
-              >
-                ⚡ Simulate Live Traffic
-              </button>
-              <button 
-                className="btn btn-danger" 
-                onClick={stopProductionDb}
-                disabled={loading}
-              >
-                🛑 Stop Production DB
-              </button>
-            </>
+          {activeTab === 'migration' && (
+            <MigrationTestingView
+              environment={environment}
+              productionDb={productionDb}
+              loading={loading}
+              sql={sql}
+              setSql={setSql}
+              astResult={astResult}
+              analyzeAst={analyzeAst}
+              exportMigrationScript={exportMigrationScript}
+              seedEnvironment={seedEnvironment}
+              fetchTables={fetchTables}
+              fetchUsers={fetchUsers}
+              executeSqlScript={executeSqlScript}
+              queryResult={queryResult}
+              logs={logs}
+            />
           )}
-        </div>
 
-        {/* SHADOW ENVIRONMENT STATUS CARD */}
-        <div className="environment-card">
-          <h3>Shadow Sandbox Status</h3>
-          {environment ? (
-            <>
-              <div className="status-badge">🟢 Container Active</div>
-              <div className="info-row">
-                <span className="info-label">Environment ID</span>
-                <span className="info-value">{environment.environmentId.substring(0, 16)}...</span>
+          {activeTab === 'databases' && (
+            <div className="card-panel">
+              <div className="panel-header">
+                <h3>Database Environments & Container Controls</h3>
               </div>
-              <div className="info-row">
-                <span className="info-label">JDBC URL</span>
-                <span className="info-value">{environment.jdbcUrl}</span>
+              <div className="control-panel" style={{ display: 'flex', gap: '12px', marginTop: '14px' }}>
+                {!environment ? (
+                  <button className="btn btn-primary" onClick={startEnvironment} disabled={loading}>
+                    {loading ? "Starting..." : "🚀 Start Shadow DB Container"}
+                  </button>
+                ) : (
+                  <button className="btn btn-danger" onClick={stopEnvironment} disabled={loading}>
+                    🛑 Destroy Shadow DB ({environment.environmentId.substring(0, 8)}...)
+                  </button>
+                )}
+
+                {!productionDb ? (
+                  <button className="btn btn-secondary" onClick={startProductionDb} disabled={loading}>
+                    📡 Start Production DB (WAL CDC)
+                  </button>
+                ) : (
+                  <>
+                    <button className="btn btn-warning" onClick={simulateProductionTraffic} disabled={loading}>
+                      ⚡ Simulate Live Traffic
+                    </button>
+                    <button className="btn btn-danger" onClick={stopProductionDb} disabled={loading}>
+                      🛑 Stop Production DB
+                    </button>
+                  </>
+                )}
               </div>
-            </>
-          ) : (
-            <>
-              <div className="status-badge offline">🔴 Offline</div>
-              <p style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
-                Click Start Shadow DB to provision a new isolated container.
-              </p>
-            </>
-          )}
-        </div>
 
-        {/* PRODUCTION CDC DB CARD */}
-        <div className="environment-card">
-          <h3>Production CDC Engine</h3>
-          {productionDb ? (
-            <>
-              <div className="status-badge">📡 WAL Logical Mode</div>
-              <div className="info-row">
-                <span className="info-label">CDC Events Captured</span>
-                <span className="info-value" style={{ color: '#38bdf8', fontWeight: 'bold' }}>
-                  {productionDb.cdcEventsCaptured || 0} Events
-                </span>
+              <div style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
+                <div className="health-item flex-1">
+                  <h4>Shadow Sandbox Status</h4>
+                  {environment ? (
+                    <div style={{ marginTop: '8px' }}>
+                      <span className="status-badge-sm healthy">Active Container</span>
+                      <p style={{ fontFamily: 'monospace', fontSize: '0.8rem', marginTop: '6px' }}>{environment.jdbcUrl}</p>
+                    </div>
+                  ) : (
+                    <p className="text-muted" style={{ fontSize: '0.85rem', marginTop: '6px' }}>Offline - Click Start Shadow DB to provision a Testcontainer sandbox.</p>
+                  )}
+                </div>
+
+                <div className="health-item flex-1">
+                  <h4>Production CDC Engine Status</h4>
+                  {productionDb ? (
+                    <div style={{ marginTop: '8px' }}>
+                      <span className="status-badge-sm healthy">WAL Logical Mode Online</span>
+                      <p style={{ fontSize: '0.85rem', marginTop: '6px' }}>CDC Events Captured: <strong>{productionDb.cdcEventsCaptured || 0}</strong></p>
+                    </div>
+                  ) : (
+                    <p className="text-muted" style={{ fontSize: '0.85rem', marginTop: '6px' }}>CDC Offline - Click Start Production DB to capture change logs.</p>
+                  )}
+                </div>
               </div>
-            </>
-          ) : (
-            <>
-              <div className="status-badge offline">🔴 CDC Offline</div>
-              <p style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
-                Start Production DB to capture live WAL transactions.
-              </p>
-            </>
-          )}
-        </div>
-      </aside>
-
-      {/* MAIN CONTENT AREA */}
-      <main className="main-content">
-        {/* TOOLBAR HEADER */}
-        <header className="editor-header">
-          <div className="editor-title">
-            <span>📝</span> Migration Script (Monaco IDE)
-          </div>
-          <div className="editor-actions">
-            <button 
-              className="btn btn-secondary" 
-              onClick={() => analyzeAst()}
-            >
-              🛡️ Analyze AST Risk
-            </button>
-            <button 
-              className="btn btn-secondary" 
-              onClick={exportMigrationScript}
-            >
-              💾 Save .sql
-            </button>
-            <button 
-              className="btn btn-secondary" 
-              onClick={seedEnvironment} 
-              disabled={!environment || loading}
-            >
-              🌱 Seed Schema
-            </button>
-            <button 
-              className="btn btn-secondary" 
-              onClick={fetchTables} 
-              disabled={!environment || loading}
-            >
-              🔍 List Tables
-            </button>
-            <button 
-              className="btn btn-secondary" 
-              onClick={fetchUsers} 
-              disabled={!environment || loading}
-            >
-              👥 View Users
-            </button>
-            <button 
-              className="btn btn-success" 
-              onClick={() => executeSqlScript()} 
-              disabled={!environment || loading}
-            >
-              ⚡ Run Migration
-            </button>
-          </div>
-        </header>
-
-        {/* PRE-FLIGHT AST RISK WARNING BANNER */}
-        {astResult && astResult.warnings && astResult.warnings.length > 0 && (
-          <div className={`ast-banner ${astResult.riskLevel}`}>
-            {astResult.warnings.map((warn, i) => (
-              <div key={i}>{warn}</div>
-            ))}
-          </div>
-        )}
-
-        {/* MONACO EDITOR WITH SMOOTH CURSOR WHEEL SCROLLING */}
-        <div className="editor-wrapper">
-          <Editor
-            height="100%"
-            defaultLanguage="sql"
-            theme="vs-dark"
-            value={sql}
-            onChange={(value) => {
-              setSql(value || '');
-              analyzeAst(value || '');
-            }}
-            options={{
-              fontSize: 14,
-              minimap: { enabled: false },
-              scrollBeyondLastLine: true,
-              automaticLayout: true,
-              smoothScrolling: true,
-              scrollbar: {
-                vertical: 'visible',
-                horizontal: 'auto',
-                verticalScrollbarSize: 10,
-                alwaysConsumeMouseWheel: false
-              },
-              fontFamily: "'Fira Code', 'Courier New', monospace"
-            }}
-          />
-        </div>
-
-        {/* TABULAR QUERY RESULTS VIEW */}
-        {queryResult && queryResult.columns && queryResult.columns.length > 0 && (
-          <div className="table-panel">
-            <div className="console-header">Query Results Data Grid ({queryResult.data.length} Rows)</div>
-            <div className="table-scroll">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    {queryResult.columns.map((col, idx) => (
-                      <th key={idx}>{col}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {queryResult.data.map((row, rowIdx) => (
-                    <tr key={rowIdx}>
-                      {queryResult.columns.map((col, colIdx) => (
-                        <td key={colIdx}>{row[col]}</td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* LIVE TERMINAL / CONSOLE */}
-        <div className="console-panel">
-          <div className="console-header">Console Output & Exception Log</div>
-          <div className="console-logs">
-            {logs.map((log, index) => (
-              <div key={index} className={`log-entry ${log.type}`}>
-                {log.text}
+          {/* PLACEHOLDERS FOR NEXT FEATURES */}
+          {activeTab === 'history' && (
+            <div className="card-panel">
+              <div className="panel-header">
+                <h3>Migration History Audit Log</h3>
+                <span className="text-muted">Feature 2 Implementation Target</span>
               </div>
-            ))}
-          </div>
+              <p className="text-muted" style={{ padding: '20px 0' }}>
+                Migration History (H2 JPA Persistence) will be activated next in Feature 2!
+              </p>
+            </div>
+          )}
+
+          {activeTab === 'diff' && (
+            <div className="card-panel">
+              <div className="panel-header">
+                <h3>Schema Diff Viewer</h3>
+                <span className="text-muted">Feature 3 Implementation Target</span>
+              </div>
+              <p className="text-muted" style={{ padding: '20px 0' }}>
+                GitHub-style Visual Schema Diff Viewer will be activated in Feature 3!
+              </p>
+            </div>
+          )}
+
+          {activeTab === 'workspace' && (
+            <div className="card-panel">
+              <div className="panel-header">
+                <h3>Dedicated SQL Workspace</h3>
+                <span className="text-muted">Feature 5 Implementation Target</span>
+              </div>
+              <p className="text-muted" style={{ padding: '20px 0' }}>
+                Dedicated SQL Query Console will be activated in Feature 5!
+              </p>
+            </div>
+          )}
+
+          {activeTab === 'logs' && (
+            <div className="card-panel">
+              <div className="panel-header">
+                <h3>System & CDC Audit Logs</h3>
+              </div>
+              <div className="console-panel" style={{ height: '300px', marginTop: '10px' }}>
+                <div className="console-logs">
+                  {logs.map((log, index) => (
+                    <div key={index} className={`log-entry ${log.type}`}>
+                      {log.text}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'settings' && (
+            <div className="card-panel">
+              <div className="panel-header">
+                <h3>Platform & Engine Configurations</h3>
+              </div>
+              <div className="health-grid" style={{ marginTop: '14px' }}>
+                <div className="health-item">
+                  <div className="health-item-title">
+                    <span>Engine Version</span>
+                    <span>v2.4.0-RELEASE</span>
+                  </div>
+                </div>
+                <div className="health-item">
+                  <div className="health-item-title">
+                    <span>Testcontainers Image</span>
+                    <span>postgres:15-alpine</span>
+                  </div>
+                </div>
+                <div className="health-item">
+                  <div className="health-item-title">
+                    <span>AST Static Parser</span>
+                    <span>com.github.jsqlparser:jsqlparser:4.9</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-      </main>
+      </div>
     </div>
   );
 }
