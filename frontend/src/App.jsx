@@ -3,6 +3,7 @@ import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
 import DashboardView from './components/DashboardView';
 import MigrationTestingView from './components/MigrationTestingView';
+import MigrationHistoryView from './components/MigrationHistoryView';
 import './index.css';
 
 const DEFAULT_MIGRATION_SQL = `-- ShadowBase Schema Migration Script
@@ -359,17 +360,8 @@ function App() {
             </div>
           )}
 
-          {/* PLACEHOLDERS FOR NEXT FEATURES */}
           {activeTab === 'history' && (
-            <div className="card-panel">
-              <div className="panel-header">
-                <h3>Migration History Audit Log</h3>
-                <span className="text-muted">Feature 2 Implementation Target</span>
-              </div>
-              <p className="text-muted" style={{ padding: '20px 0' }}>
-                Migration History (H2 JPA Persistence) will be activated next in Feature 2!
-              </p>
-            </div>
+            <MigrationHistoryView />
           )}
 
           {activeTab === 'diff' && (

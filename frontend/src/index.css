@@ -558,3 +558,190 @@ body {
 .log-entry.success { color: var(--success); }
 .log-entry.error { color: var(--danger); }
 .log-entry.info { color: var(--accent-cyan); }
+
+/* MIGRATION HISTORY VIEW STYLES */
+.filter-bar {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding-top: 10px;
+}
+
+.search-box {
+  flex: 1;
+  min-width: 240px;
+  display: flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 6px 12px;
+  gap: 8px;
+}
+
+.search-input {
+  background: transparent;
+  border: none;
+  color: var(--text-main);
+  outline: none;
+  width: 100%;
+  font-size: 0.85rem;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.filter-select {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  outline: none;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-sm {
+  padding: 4px 10px;
+  font-size: 0.78rem;
+}
+
+.font-mono { font-family: monospace; }
+.text-cyan { color: var(--accent-cyan); }
+.text-snippet { max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.type-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-main);
+}
+
+.status-pill {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.status-pill.success { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+.status-pill.failed { background: rgba(244, 63, 94, 0.2); color: var(--danger); }
+.status-pill.blocked { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+.status-pill.analyzed { background: rgba(56, 189, 248, 0.2); color: var(--accent-cyan); }
+
+.risk-pill {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.banner-critical { background: rgba(244, 63, 94, 0.25); color: #fecdd3; border: 1px solid rgba(244, 63, 94, 0.4); }
+.banner-high { background: rgba(244, 63, 94, 0.15); color: #fecdd3; }
+.banner-medium { background: rgba(245, 158, 11, 0.15); color: #fde68a; }
+.banner-low { background: rgba(16, 185, 129, 0.15); color: #a7f3d0; }
+
+/* MODAL STYLES */
+.modal-backdrop {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #0f172a;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  width: 90%;
+  max-width: 650px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  font-size: 0.85rem;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.modal-section h4 {
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.code-block {
+  background: #020617;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 12px;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.82rem;
+  color: var(--accent-cyan);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.code-block.error {
+  color: var(--danger);
+  border-color: rgba(244, 63, 94, 0.3);
+}
+
+.modal-footer {
+  padding: 14px 20px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-end;
+}
+
