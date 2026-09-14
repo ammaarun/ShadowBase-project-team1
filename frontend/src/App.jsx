@@ -5,6 +5,7 @@ import DashboardView from './components/DashboardView';
 import MigrationTestingView from './components/MigrationTestingView';
 import MigrationHistoryView from './components/MigrationHistoryView';
 import SchemaDiffView from './components/SchemaDiffView';
+import SqlWorkspaceView from './components/SqlWorkspaceView';
 import './index.css';
 
 const DEFAULT_MIGRATION_SQL = `-- ShadowBase Schema Migration Script
@@ -370,15 +371,7 @@ function App() {
           )}
 
           {activeTab === 'workspace' && (
-            <div className="card-panel">
-              <div className="panel-header">
-                <h3>Dedicated SQL Workspace</h3>
-                <span className="text-muted">Feature 5 Implementation Target</span>
-              </div>
-              <p className="text-muted" style={{ padding: '20px 0' }}>
-                Dedicated SQL Query Console will be activated in Feature 5!
-              </p>
-            </div>
+            <SqlWorkspaceView environment={environment} onSeed={seedEnvironment} />
           )}
 
           {activeTab === 'logs' && (
