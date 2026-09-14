@@ -14,7 +14,7 @@ function Sidebar({ activeTab, setActiveTab, activeContainersCount, cdcOnline }) 
 
   return (
     <aside className="app-sidebar">
-      <div className="brand-header">
+      <div className="brand-header" onClick={() => setActiveTab('dashboard')} style={{ cursor: 'pointer' }}>
         <div className="brand-logo">🌒</div>
         <div className="brand-text">
           <h2>ShadowBase</h2>

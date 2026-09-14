@@ -489,8 +489,8 @@ body {
 .migration-testing-view {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  height: 100%;
+  gap: 16px;
+  min-height: min-content;
 }
 
 .editor-header {
@@ -520,10 +520,12 @@ body {
 .ast-banner.LOW { background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.4); color: #a7f3d0; }
 
 .editor-wrapper {
-  height: 250px;
+  height: 280px;
+  min-height: 280px;
   border-radius: 10px;
   overflow: hidden;
   border: 1px solid var(--border-color);
+  flex-shrink: 0;
 }
 
 .table-panel {
@@ -963,6 +965,15 @@ body {
   flex-direction: column;
   gap: 4px;
 }
+
+/* SQL WORKSPACE VIEW STYLES */
+.sql-workspace-view {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: min-content;
+}
+
 
 
 

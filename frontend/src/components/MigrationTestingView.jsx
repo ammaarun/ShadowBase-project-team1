@@ -69,19 +69,7 @@ function MigrationTestingView({
         </div>
       </header>
 
-      {/* ENHANCED AST RISK SCORE PANEL */}
-      <RiskScorePanel astResult={astResult} />
-
-      {/* PRE-FLIGHT AST RISK WARNING BANNER */}
-      {astResult && astResult.warnings && astResult.warnings.length > 0 && (
-        <div className={`ast-banner ${astResult.riskLevel}`}>
-          {astResult.warnings.map((warn, i) => (
-            <div key={i}>{warn}</div>
-          ))}
-        </div>
-      )}
-
-      {/* MONACO EDITOR */}
+      {/* MONACO EDITOR - ALWAYS PROMINENT AT TOP */}
       <div className="editor-wrapper">
         <Editor
           height="100%"
@@ -108,6 +96,18 @@ function MigrationTestingView({
           }}
         />
       </div>
+
+      {/* ENHANCED AST RISK SCORE PANEL */}
+      <RiskScorePanel astResult={astResult} />
+
+      {/* PRE-FLIGHT AST RISK WARNING BANNER */}
+      {astResult && astResult.warnings && astResult.warnings.length > 0 && (
+        <div className={`ast-banner ${astResult.riskLevel}`}>
+          {astResult.warnings.map((warn, i) => (
+            <div key={i}>{warn}</div>
+          ))}
+        </div>
+      )}
 
       {/* TABULAR QUERY RESULTS VIEW */}
       {queryResult && queryResult.columns && queryResult.columns.length > 0 && (

@@ -22,7 +22,7 @@ function SqlWorkspaceView({ environment, onSeed }) {
     setLoading(true);
     setResult(null);
     setErrorDetails(null);
-    const startTime = System.currentTimeMillis ? System.currentTimeMillis() : Date.now();
+    const startTime = Date.now();
 
     try {
       const response = await fetch(`http://localhost:8081/api/environments/${environment.environmentId}/execute`, {
@@ -127,7 +127,7 @@ function SqlWorkspaceView({ environment, onSeed }) {
           </div>
         </div>
 
-        <div className="editor-wrapper" style={{ height: '180px', marginTop: '10px' }}>
+        <div className="editor-wrapper" style={{ height: '220px', minHeight: '220px', marginTop: '10px' }}>
           <Editor
             height="100%"
             defaultLanguage="sql"
@@ -137,8 +137,15 @@ function SqlWorkspaceView({ environment, onSeed }) {
             options={{
               fontSize: 14,
               minimap: { enabled: false },
-              scrollBeyondLastLine: false,
+              scrollBeyondLastLine: true,
               automaticLayout: true,
+              smoothScrolling: true,
+              scrollbar: {
+                vertical: 'visible',
+                horizontal: 'auto',
+                verticalScrollbarSize: 10,
+                alwaysConsumeMouseWheel: false
+              },
               fontFamily: "'Fira Code', 'Courier New', monospace"
             }}
           />
